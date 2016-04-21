@@ -9,8 +9,8 @@
 	[
 	 	"activeTab",
 	 	"tabs",
-	 	"notifications",
-    	"http://*/*",
+		"notifications",
+		"http://*/*",
 		"https://*/*"
 	],
 
@@ -32,6 +32,6 @@
 
   	"background":
     {
-        "scripts": ["js/jquery-2.0.3.min.js", "js/bootstrap.min.js", "js/background.js"]
+		"scripts": ["js/jquery-2.0.3.min.js", "js/bootstrap.min.js", "js/background.js"]
     }
 }
