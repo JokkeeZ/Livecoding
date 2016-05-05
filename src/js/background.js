@@ -1,23 +1,22 @@
 (function() {
-	'use strict';
 
-	var channels = [];
 	var notification;
+	var channels = [];
 
-	/*
-	 * OPTIONS
-	 * userName = channel
-	 * key = https://www.livecoding.tv/rss/USERNAME/followed/?key=KEY
-	 * useNotifications = popup chrome notification when followed streams goes live. (true/false)
-	 */
-	var userName = '';
-	var key = '';
-	var useNotifications = false;
+	var extensionOptions = {
+		userName: '',
+		key: '',
+		useNotifications: true
+	};
 
 	$(document).ready(function() {
 		getLiveChannels();
 		updateStreams();
 
+		$('body').on('click', 'button', function() {
+			getLiveChannels();
+		});
+		
 		$('body').on('click', 'td', function() {
 			if ($('tr').hasClass('offline') !== true) {
 				chrome.tabs.create({
@@ -26,18 +25,27 @@
 				return false;
 			}
 		});
-
-		$('.btn-update').bind('click', getLiveChannels);
+		
+		chrome.browserAction.setBadgeBackgroundColor({
+			color: [190, 190, 190, 230]
+		});
+		
+		channels.onchange = function() {
+			chrome.browserAction.setBadgeText({
+				text: channels.length.toString()
+			});
+		}
 	});
 
 	function getLiveChannels() {
 		$.ajax({
-			url: 'https://www.livecoding.tv/rss/' + userName + '/followed/?key=' + key,
+			url: 'https://www.livecoding.tv/rss/' + extensionOptions.userName + '/followed/?key=' + extensionOptions.key,
 			cache: false
 		})
 		.done(function(data) {
 			var tmp = xml2json(data);
-
+			xmlData = data;
+			
 			parseChannelData(tmp.rss.channel.item);
 
 			if (channels.length === 0 && $('tr').hasClass('offline') !== true) {
@@ -51,10 +59,6 @@
 					}
 				});
 			}
-
-			var text = '' + channels.length;
-
-			updateBadge(text);
 		});
 	}
 
@@ -66,9 +70,6 @@
 			if (isLive(channelStatus)) {
 				if ($.inArray(channelName, channels) === -1) {
 					addNewChannel(channelName);
-					
-					if (useNotifications)
-						showNotification(channelName);
 				}
 			} else {
 				if ($.inArray(channelName, channels) !== -1)
@@ -80,9 +81,23 @@
 	function updateStreams() {
 		setInterval(function() {
 			getLiveChannels();
-			console.warn('New data requested');
 		}, 5000);
 	}
+	
+
+	(function updateBadge() {	
+		if (channels.length === 0) {
+			chrome.browserAction.setBadgeText({
+				text: "0"
+			});
+		} else {
+			chrome.browserAction.setBadgeText({
+				text: channels.length.toString()
+			});
+		}
+		
+		setTimeout(updateBadge, 1000);
+	})();
 
 	function xml2json(xml) {
 		try {
@@ -114,28 +129,17 @@
 		}
 	}
 
-	function updateBadge(str) {
-		chrome.browserAction.setBadgeBackgroundColor({
-			color: [190, 190, 190, 230]
-		});
-
-		chrome.browserAction.setBadgeText({
-			text: str
-		});
-	}
-
 
 	function showNotification(channelName) {
 		var options = {
 			title: 'LCTV - Live Channels',
 			priority: 0,
-			iconUrl: chrome.extension.getURL('img/lctvdark64.png'),
+			iconUrl: chrome.extension.getURL('64.png'),
 			message: 'New Livecoding.tv channel is live:\n',
 			type: 'basic'
 		};
 
 		options.message += channelName;
-
 		chrome.notifications.create('', options, onNotification);
 	}
 
@@ -144,10 +148,16 @@
 	}
 
 	function addNewChannel(channel) {
+		
+		if (extensionOptions.useNotifications)
+			showNotification(channel);
+		
+		console.log('Added new channel ' + channel);
 		channels.push(channel);
 	}
 
 	function removeChannel(channel) {
+		console.log('Removed channel ' + channel);
 		channels.splice(channels.indexOf(channel, 1));
 	}
 
