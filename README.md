@@ -1,4 +1,4 @@
-# Livecoding.tv Chrome extension
+# Livecoding.tv chrome extension
 Livecoding.tv extension for displaying a followed channels which are live.
 
 # Where to find my key?
